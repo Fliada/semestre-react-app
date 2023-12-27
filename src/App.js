@@ -40,11 +40,28 @@ const SortButton = styled.button`
   font-size: 18px;
 `;
 
-const TaskList = styled.ul`
+const TaskListView = styled.ul`
   list-style: none;
   padding: 0;
   margin: 0;
 `;
+
+const TaskList = ({tasks, onToggleCompletion, onEdit, onDelete }) => {
+
+  return (
+      <TaskListView>
+        {tasks.map((task) => (
+            <TaskItem
+                key={task.id}
+                task={task}
+                onToggleCompletion={onToggleCompletion}
+                onEdit={onEdit}
+                onDelete={onDelete}
+            />
+        ))}
+      </TaskListView>
+  );
+};
 
 const TaskItemView = styled.li`
   width: full;
@@ -60,7 +77,7 @@ const TaskItemView = styled.li`
   font-size: 20px;
 `;
 
-const TaskItem = ({ task, onToggleCompletion }) => {
+const TaskItem = ({ key, task, onToggleCompletion, onEdit, onDelete }) => {
   const [completed, setCompleted] = useState(task.completed);
 
   const handleToggle = () => {
@@ -71,10 +88,11 @@ const TaskItem = ({ task, onToggleCompletion }) => {
   return (
       <TaskItemView>
         <input type="checkbox" checked={completed} onChange={handleToggle} />
-        <span style={{ textDecoration: completed ? 'line-through' : 'none' }}>
-        {task.title}
-      </span>
-        {/* Дополнительный код для редактирования и удаления */}
+        <span style={{ textDecoration: completed ? 'line-through' : 'none' }}>{task.title}</span>
+        <TaskDiv>
+          <TaskButton onClick={() => onEdit(task)}>EDIT</TaskButton>
+          <TaskButton onClick={() => onDelete(task.id)}><img src="Vector.png" alt="" /></TaskButton>
+        </TaskDiv>
       </TaskItemView>
   );
 };
@@ -201,17 +219,12 @@ const App = () => {
         </Container>      
       </NavBar>
       <Container>
-        <TaskList>
-          {filteredTasks.map((task) => (
-            <TaskItem key={task.id} task={task} onToggleCompletion={handleToggleCompletion}>
-              <input type="checkbox"/>
-              <span style={{ textDecoration: task.completed ? 'line-through' : 'none' }}>{task.title}</span>
-              <TaskDiv>
-                <TaskButton onClick={() => handleEdit(task)}>EDIT</TaskButton>
-                <TaskButton onClick={() => handleDelete(task.id)}><img src="Vector.png" alt="" /></TaskButton>
-              </TaskDiv>
-            </TaskItem>
-          ))}
+        <TaskList
+            tasks={filteredTasks}
+            onToggleCompletion={handleToggleCompletion}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+        >
         </TaskList>       
       </Container>     
     </>
