@@ -46,7 +46,7 @@ const TaskList = styled.ul`
   margin: 0;
 `;
 
-const TaskItem = styled.li`
+const TaskItemView = styled.li`
   width: full;
   border-style: solid;
   border-width: 1px;
@@ -59,6 +59,25 @@ const TaskItem = styled.li`
   padding: 16px;
   font-size: 20px;
 `;
+
+const TaskItem = ({ task, onToggleCompletion }) => {
+  const [completed, setCompleted] = useState(task.completed);
+
+  const handleToggle = () => {
+    setCompleted(!completed);
+    onToggleCompletion(task.id);
+  };
+
+  return (
+      <TaskItemView>
+        <input type="checkbox" checked={completed} onChange={handleToggle} />
+        <span style={{ textDecoration: completed ? 'line-through' : 'none' }}>
+        {task.title}
+      </span>
+        {/* Дополнительный код для редактирования и удаления */}
+      </TaskItemView>
+  );
+};
 
 const TaskButton = styled.button`
   background: #2196F3;
@@ -80,8 +99,10 @@ const App = () => {
   const queryClient = new QueryClient();
   const [sortCompleted, setSortCompleted] = useState(false);
 
+  //Если нет в локальном хранилище tasks то []
   const fetchTasks = async () => {
     const storedTasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    //если true, то выполняется сортировка задач
     return sortCompleted
       ? storedTasks.sort((a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1))
       : storedTasks;
@@ -108,10 +129,12 @@ const App = () => {
     return updatedTasks;
   };
 
+  //хук для получения всех тасков (если есть ключ tasks, то fetchTasks, если нет то [])
   const { data: tasks } = useQuery('tasks', fetchTasks, {
     initialData: [],
   });
 
+  //хук для выполнения изменения изменения данных
   const mutation = useMutation(addTask, {
     onSuccess: () => {
       queryClient.invalidateQueries('tasks');
@@ -126,10 +149,12 @@ const App = () => {
 
   const deleteMutation = useMutation(deleteTask, {
     onSuccess: () => {
+      //инвалидация кэша и обновление интерфейса
       queryClient.invalidateQueries('tasks');
     },
   });
 
+  //редактирование задачи с помощью диалогового окна (prompt)
   const handleEdit = (task) => {
     const editedTask = prompt('Edit task:', task.title);
     if (editedTask) {
@@ -146,13 +171,15 @@ const App = () => {
 
   const handleToggleCompletion = (taskId) => {
     const updatedTasks = (tasks || []).map((task) =>
-      task.id === taskId ? { ...task, completed: !task.completed } : task
+        task.id === taskId ? { ...task, completed: !task.completed } : task
     );
     localStorage.setItem('tasks', JSON.stringify(updatedTasks));
     queryClient.setQueryData('tasks', updatedTasks);
   };
 
-  const filteredTasks = sortCompleted ? (tasks || []) : (tasks || []).filter((task) => !task.completed);
+  const filteredTasks = sortCompleted
+      ? (tasks.sort((a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1)) || [])
+      : (tasks || []).filter((task) => !task.completed);
 
   return (
     <>
@@ -176,8 +203,8 @@ const App = () => {
       <Container>
         <TaskList>
           {filteredTasks.map((task) => (
-            <TaskItem key={task.id}>
-              <input type="checkbox" onClick={() => handleToggleCompletion(task.id)} />
+            <TaskItem key={task.id} task={task} onToggleCompletion={handleToggleCompletion}>
+              <input type="checkbox"/>
               <span style={{ textDecoration: task.completed ? 'line-through' : 'none' }}>{task.title}</span>
               <TaskDiv>
                 <TaskButton onClick={() => handleEdit(task)}>EDIT</TaskButton>
